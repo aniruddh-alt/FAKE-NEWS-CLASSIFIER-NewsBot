@@ -1,65 +1,59 @@
-
+import streamlit as st
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
-import streamlit as st
-import joblib,os
-from sklearn import *
-import pandas as pd
 
+# Load the pre-trained model
+loaded_model = pickle.load(open('DT_MODEL', 'rb'))
+
+# Function to classify news
+def fake_news_det(news):
+    tfid_news = tfvect.transform([news])
+    prediction = loaded_model.predict(tfid_news)
+    probability = loaded_model.predict_proba(tfid_news)
+    return prediction, probability
+
+# Set page background image
 page_bg_img = '''
 <style>
 body {
-background-image: url("https://images.unsplash.com/photo-1542281286-9e0a16bb7366");
-background-size: cover;
+    background-image: url("https://images.unsplash.com/photo-1542281286-9e0a16bb7366");
+    background-size: cover;
 }
 </style>
 '''
 
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-
-
-fake=pd.read_csv("Fake.csv")
-true=pd.read_csv("True.csv")
-fake["class"]=0
-true["class"]=1
-df_marge = pd.concat([fake, true], axis =0 )
-df = df_marge.drop(["title", "subject","date"], axis = 1)
-
-tfvect = TfidfVectorizer(stop_words='english', max_df=0.7)
-loaded_model = pickle.load(open('DT_MODEL', 'rb'))
-dataframe = df
-x =  dataframe["text"]
-y = dataframe['class']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
-
-def fake_news_det(news):
-    tfid_x_train = tfvect.fit_transform(x_train)
-    tfid_x_test = tfvect.transform(x_test)
-    loaded_model.fit(tfid_x_train, y_train)
-    input_data = [news]
-    vectorized_input_data = tfvect.transform(input_data)
-    prediction = loaded_model.predict(vectorized_input_data)
-    return prediction
-
-
-
+# Main title
 st.title("NEWS BOT")
-# st.subheader("ML App with Streamlit")
-html_temp = """
-<div style="background-color:black;padding:10px">
-<h1 style="color:white;text-align:center;">FAKE NEWS CLASSIFIER </h1>
-</div>
-"""
-st.markdown(html_temp,unsafe_allow_html=True)
-news_text=st.text_input("Enter Text")
 
-if st.button("classify"):
-    p=fake_news_det(news_text)
+# Sidebar
+st.sidebar.title("Options")
+news_text = st.sidebar.text_area("Enter Text")
 
-    if p==0:
-        st.title("""FAKE NEWS""")
-    else:
-        st.title("""TRUE NEWS""")
+if st.sidebar.button("Classify"):
+    if news_text:
+        prediction, probability = fake_news_det(news_text)
 
+        if prediction[0] == 0:
+            st.error("This news is classified as FAKE.")
+        else:
+            st.success("This news is classified as TRUE.")
+
+        st.subheader("Prediction Probability")
+        st.write(f"Probability of being FAKE: {probability[0][0]:.2f}")
+        st.write(f"Probability of being TRUE: {probability[0][1]:.2f}")
+
+# Information and credits
+st.sidebar.title("About")
+st.sidebar.info("This app classifies news articles as FAKE or TRUE.")
+st.sidebar.text("Dataset Source: Your Dataset Source")
+st.sidebar.text("Model: Decision Tree Classifier")
+
+# You can include additional information and references here.
+
+# Background image
+st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Background image source: Your Image Source</p>", unsafe_allow_html=True)
